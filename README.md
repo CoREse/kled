@@ -1,4 +1,10 @@
-# Kled: a SV caller
+# Kled: An ultra-fast and sensitive structural variant detection tool for long-read sequencing data
+## Introduction
+Kled is designed to call SVs nicely and quickly using long-read sequencing data. It takes mapped reads file (bam) as input and reports SVs to the stdout in the VCF file format. Kled can yield precise and comprehensive SV detection results within minutes and can run on any modern computer without needing of any field knowledge of the user to perform the SV detection.
+
+## Project structure
+This project contains the source of the kled, which resides in the root path of the project, and the scripts used in the experiments, which reside in the experiments folder.
+
 ## Compiling
 Dependencies: openmp and dependencies of htslib (-lz -lm -lbz2 -llzma -lcurl -lpthread -lcrypto -ldeflate)
 
