@@ -2,6 +2,15 @@ Ref=$1
 Sample=$2
 Seed=$3
 gunzip -c HG002_ONT_UL.ldist.gz > HG002_ONT_UL.ldist
+
+RefLength=`awk '{sum+=$2} END {print sum}' $Ref.fai`
+
+L=0
+for h in "h1" "h2"; do
+    L=$((L+`awk '{sum+=$2} END {print sum}' $Sample/$h.fa.fai`))
+done
+Depth=$(echo "scale=2;30*$RefLength/$L" | bc)
+
 for h in "h1" "h2"; do
     mkdir $Sample/$h.fa.chrs
     Chrs=`cut -f1 $Sample/$h.fa.fai`
