@@ -45,3 +45,6 @@ For the description of all parameters:
 ```
 kled --help
 ```
+
+## Citation
+This work is published in *Briefings in Bioinformatics* (https://academic.oup.com/bib/article/25/2/bbae049/7611936), please visit the site for citations.
