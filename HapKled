@@ -1,0 +1,127 @@
+#!/usr/bin/bash
+WorkDir="./HapKledWork"
+ThreadN=8
+Version="v1.0"
+UsageString="HapKled -R Ref.fa Alignment.bam [options]
+Options:
+    -t --threads N   Thread number ($ThreadN)
+    --workdir Dir    Work dir ($WorkDir), haplotagged bam files will be saved to this place.
+    --retaintemp     Keep all temperory files.
+    --continue       If work dir exists, assume it has haplotagged bam and run on that bam.
+    --callerparas    Provide extra parameters for the SV caller."
+
+RetainTemp=
+Continue=
+CallerParas=
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+        echo "$UsageString"
+        exit 0
+        ;;
+        -R)
+        Ref="$2"
+        shift
+        ;;
+        --workdir)
+        WorkDir="$2"
+        shift
+        ;;
+        --retaintemp)
+        RetainTemp="True"
+        ;;
+        --continue)
+        Continue="True"
+        ;;
+        -t|--threads)
+        ThreadN="$2"
+        shift
+        ;;
+        --callerparas)
+        CallerParas="$2"
+        shift
+        ;;
+        --version)
+        echo "HapKled $Version"
+        exit 0
+        ;;
+        *)
+        Origin="$1"
+        ;;
+    esac
+    shift
+done
+
+if [ -z "$HapAwareKled" ];then
+    >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` You should first provide the path of the haplotype-aware kled to environment variable HapAwareKled. E.g.:
+export HapAwareKled=/path/to/hap-aware-kled"
+    exit 1
+fi
+
+if [ -z "$Clair3ModelPath" ];then
+    >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` You should first provide the path of the Clair3 models to environment variable Clair3ModelPath. E.g.:
+export Clair3ModelPath=/path/to/bin/models"
+    exit 1
+fi
+
+if [ -z "$Ref" ]; then
+    >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` No reference is provided!
+$UsageString"
+    exit 1
+fi
+
+if [ -z "$Origin" ]; then
+    >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` No alignment is provided!
+$UsageString"
+    exit 1
+fi
+
+if [ -d "$WorkDir" ]; then
+    if [ -z "$Continue" ]; then
+        >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` $WorkDir already exists."
+        exit 1
+    fi
+fi
+
+Clair3Model="$Clair3ModelPath/r941_prom_hac_g360+g422"
+Name=`basename $Origin .bam`
+WhatshapBamName=$Name.whatshap.haplotag.bam
+TargetBam="$WorkDir/$WhatshapBamName"
+
+>&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` HapKled $Version started at `date`"
+
+if [ -z "$Continue" ]; then
+    # rm -rf $WorkDir 2>/dev/null
+    mkdir $WorkDir
+    if [ $? -ne 0 ]; then
+        >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` Failed creating working dir."
+    fi
+    cd $WorkDir
+    >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` Calling SNP using Clair3..."
+    >&2 run_clair3.sh --bam_fn=$Origin --ref_fn=$Ref --threads="$ThreadN" --platform="ont" --model_path="$Clair3Model" --output="./"
+    gunzip -c merge_output.vcf.gz > merge_output.vcf
+    >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` Phasing SNP using whatshap..."
+    >&2 whatshap phase --ignore-read-groups --indels -r $Ref merge_output.vcf $Origin -o phased_merge_output.vcf
+    bgzip -c phased_merge_output.vcf > phased_merge_output.vcf.gz
+    tabix -p vcf phased_merge_output.vcf.gz
+    >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` Haplotagging using whatshap..."
+    >&2 whatshap haplotag --tag-supplementary --ignore-read-groups phased_merge_output.vcf.gz $Origin -r $Ref -o $WhatshapBamName --output-threads=$ThreadN
+    samtools index -@ $ThreadN $WhatshapBamName
+    
+    cd ..
+else
+    >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` Continuing on calling..."
+    if [ ! -f "$TargetBam" ]; then
+        >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` $TargetBam does not exist!"
+        exit 1
+    fi
+fi
+>&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` Calling SV on $TargetBam"
+$HapAwareKled -R $Ref $TargetBam -t $ThreadN $CallerParas
+
+if [ -z "$RetainTemp" ]; then
+    >&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` Removing working dir..."
+    rm -r $WorkDir 2>/dev/null
+fi
+
+>&2 echo "`date '+[%Y-%m-%d %H:%M:%S]'` Finished. `date`"

@@ -287,7 +287,7 @@ string cigar2string(uint32_t* CIGARD, uint32_t CIGARN)
 	return result;
 }
 
-void searchDelFromAligns(bam1_t *br, Contig& TheContig, vector<Alignment> &Aligns, int Tech, vector<vector<vector<Signature>>> &TypeSignatures, Arguments & Args)
+void searchDelFromAligns(bam1_t *br, int HP, Contig& TheContig, vector<Alignment> &Aligns, int Tech, vector<vector<vector<Signature>>> &TypeSignatures, Arguments & Args)
 {
 	// vector<Signature> &Signatures=TypeSignatures[TheContig.ID][0];
 	for (int i=0;i<Aligns.size()-1;++i)
@@ -321,6 +321,7 @@ void searchDelFromAligns(bam1_t *br, Contig& TheContig, vector<Alignment> &Align
 				int End=Aligns[LatterI].Pos;
 				double Quality=0.5*(Aligns[FormerI].getQuality()+Aligns[LatterI].getQuality());
 				Signature TempSignature(2,Tech,0,Aligns[FormerI].End,End,bam_get_qname(br),Quality);
+				TempSignature.HP=HP;
 				// pthread_mutex_lock(&Mut->m_Sig[0]);
 				TypeSignatures[Aligns[i].Cid][0].push_back(TempSignature);
 				// pthread_mutex_unlock(&Mut->m_Sig[0]);
@@ -330,7 +331,7 @@ void searchDelFromAligns(bam1_t *br, Contig& TheContig, vector<Alignment> &Align
 	}
 }
 
-void searchInsFromAligns(bam1_t *br,Contig& TheContig,vector<Alignment> &Aligns, int Tech, vector<vector<vector<Signature>>> &TypeSignatures, Arguments & Args)
+void searchInsFromAligns(bam1_t *br, int HP, Contig& TheContig,vector<Alignment> &Aligns, int Tech, vector<vector<vector<Signature>>> &TypeSignatures, Arguments & Args)
 {
 	// vector<Signature> &Signatures=TypeSignatures[TheContig.ID][1];
 	for (int i=0;i<Aligns.size()-1;++i)
@@ -354,6 +355,7 @@ void searchInsFromAligns(bam1_t *br,Contig& TheContig,vector<Alignment> &Aligns,
 			{
 				double Quality=0.5*(Aligns[FormerI].getQuality()+Aligns[LatterI].getQuality());
 				Signature TempSignature(2,Tech,1,(Aligns[FormerI].End+Aligns[LatterI].Pos)/2,MIN(TheContig.Size-1,(Aligns[FormerI].End+Aligns[LatterI].Pos)/2+Gap),bam_get_qname(br),Quality);
+				TempSignature.HP=HP;
 				// pthread_mutex_lock(&Mut->m_Sig[1]);
 				TypeSignatures[Aligns[FormerI].Cid][1].push_back(TempSignature);
 				// Signatures.push_back(TempSignature);
@@ -373,7 +375,7 @@ bool continuous(const Alignment& Former, const Alignment& Latter, unsigned Endur
 	return false;
 }
 
-void searchInvFromAligns(bam1_t *br,Contig& TheContig,vector<Alignment> &Aligns, int Tech, vector<vector<vector<Signature>>> &TypeSignatures, Arguments & Args)
+void searchInvFromAligns(bam1_t *br, int HP, Contig& TheContig,vector<Alignment> &Aligns, int Tech, vector<vector<vector<Signature>>> &TypeSignatures, Arguments & Args)
 {
 	for (int i=0;i<Aligns.size()-1;++i)
 	{
@@ -408,6 +410,7 @@ void searchInvFromAligns(bam1_t *br,Contig& TheContig,vector<Alignment> &Aligns,
 					double Quality=Aligns[i].getQuality()+Aligns[j].getQuality()+Aligns[k].getQuality();
 					Quality/=3.0;
 					Signature TempSignature(2,Tech,3,Aligns[j].Pos,Aligns[j].End,bam_get_qname(br),Quality);
+					TempSignature.HP=HP;
 					TempSignature.setInvLeft(true);
 					TempSignature.setInvRight(true);
 					// pthread_mutex_lock(&Mut->m_Sig[3]);
@@ -419,8 +422,10 @@ void searchInvFromAligns(bam1_t *br,Contig& TheContig,vector<Alignment> &Aligns,
 				{
 					double Quality=0.5*(Aligns[FormerI].getQuality()+Aligns[LatterI].getQuality());
 					Signature Temp1Signature(2,Tech,3,Aligns[FormerI].Pos,Aligns[FormerI].End,bam_get_qname(br),Quality);
+					Temp1Signature.HP=HP;
 					Temp1Signature.setInvRight(true);
 					Signature Temp2Signature(2,Tech,3,Aligns[LatterI].Pos,Aligns[LatterI].End,bam_get_qname(br),Quality);
+					Temp2Signature.HP=HP;
 					Temp2Signature.setInvLeft(true);
 					// pthread_mutex_lock(&Mut->m_Sig[3]);
 					TypeSignatures[Aligns[FormerI].Cid][3].push_back(Temp1Signature);
@@ -525,7 +530,7 @@ bool conformDup(int S1, int E1, int S2, int E2, double Threshold=0.3)//from svim
 	return false;
 }
 
-void searchDupFromAligns(bam1_t *br,Contig& TheContig,vector<Alignment> &Aligns, int Tech, vector<vector<vector<Signature>>> &TypeSignatures, vector<float*> &CoverageWindowsPs, vector<unsigned long> &CoverageWindowsNs, CoverageWindowMutex *Mut, Arguments & Args)
+void searchDupFromAligns(bam1_t *br,int HP,Contig& TheContig,vector<Alignment> &Aligns, int Tech, vector<vector<vector<Signature>>> &TypeSignatures, vector<float*> &CoverageWindowsPs, vector<unsigned long> &CoverageWindowsNs, CoverageWindowMutex *Mut, Arguments & Args)
 {
 	// #define OLD
 	#ifndef OLD
@@ -581,6 +586,7 @@ void searchDupFromAligns(bam1_t *br,Contig& TheContig,vector<Alignment> &Aligns,
 							if (CurrentEnd-CurrentStart>Args.MinSVLen)
 							{
 								Signature TempSignature(2,Tech,2,CurrentStart,CurrentEnd,bam_get_qname(br),CurrentQuality);
+								TempSignature.HP=HP;
 								// TempSignature.setCN(CurrentN+1);//assume the other strand's CN is 1
 								TempSignature.setCN(CurrentN);//As defined in VCFv4.4, the info copy number shall be the CN for the allele
 								TempSignature.Covered=Covered;
@@ -643,6 +649,7 @@ void searchDupFromAligns(bam1_t *br,Contig& TheContig,vector<Alignment> &Aligns,
 		if (CurrentEnd-CurrentStart>=Args.MinSVLen)
 		{
 			Signature TempSignature(2,Tech,2,CurrentStart,CurrentEnd,bam_get_qname(br),CurrentQuality);
+			TempSignature.HP=HP;
 			TempSignature.setCN(CurrentN);
 			TempSignature.Covered=Covered;
 			// statCoverage(CurrentStart,CurrentEnd,CoverageWindowsPs[CurrentCid],CoverageWindowsNs[CurrentCid],Mut,Args,-1);
@@ -741,7 +748,7 @@ void dealClipConflicts(vector<Alignment> &Aligns, Arguments & Args)
 	}
 }
 
-void searchForClipSignatures(bam1_t *br, Contig & TheContig, Sam &SamFile, int Tech, vector<vector<vector<Signature>>> &TypeSignatures, vector<float *>&CoverageWindowsPs, vector<unsigned long> &CoverageWindowsNs, CoverageWindowMutex *Mut, Arguments & Args)
+void searchForClipSignatures(bam1_t *br, int HP, Contig & TheContig, Sam &SamFile, int Tech, vector<vector<vector<Signature>>> &TypeSignatures, vector<float *>&CoverageWindowsPs, vector<unsigned long> &CoverageWindowsNs, CoverageWindowMutex *Mut, Arguments & Args)
 {
 	if (!align_is_primary(br)) return;
 	// int AS=bam_aux2i(bam_aux_get(br,"AS"));
@@ -825,10 +832,10 @@ void searchForClipSignatures(bam1_t *br, Contig & TheContig, Sam &SamFile, int T
 	// // for (int i=0;i<Aligns.size();++i) printf(" %d,%d,%d",Aligns[i].Strand,Aligns[i].ForwardPos,Aligns[i].ForwardEnd);
 	// printf("\n");
 	// pthread_mutex_unlock(&Mut->m_Sig[1]);
-	searchDelFromAligns(br,TheContig,Aligns,Tech,TypeSignatures, Args);
-	searchInsFromAligns(br,TheContig,Aligns,Tech,TypeSignatures, Args);
-	searchDupFromAligns(br,TheContig,Aligns,Tech,TypeSignatures, CoverageWindowsPs, CoverageWindowsNs, Mut, Args);
-	searchInvFromAligns(br,TheContig,Aligns,Tech,TypeSignatures, Args);
+	searchDelFromAligns(br,HP,TheContig,Aligns,Tech,TypeSignatures, Args);
+	searchInsFromAligns(br,HP,TheContig,Aligns,Tech,TypeSignatures, Args);
+	searchDupFromAligns(br,HP,TheContig,Aligns,Tech,TypeSignatures, CoverageWindowsPs, CoverageWindowsNs, Mut, Args);
+	searchInvFromAligns(br,HP,TheContig,Aligns,Tech,TypeSignatures, Args);
 }
 
 //This kind of signature should - some normal isize when calc svlen
@@ -1217,6 +1224,9 @@ void handlebr(bam1_t *br, Contig * pTheContig, Sam *pSamFile, int Tech, const St
 		AllPrimarySegments.add(br->core.pos,end);
 		// pthread_mutex_unlock(&mut->m_AllPrimarySeg);
 	}
+	int HP=0;
+	uint8_t * HPP=bam_aux_get(br,"HP");
+	if (HPP!=NULL) HP=bam_aux2i(HPP);
 	unsigned long long BrHash=0;
 	// BrHash=br->core.tid;
 	BrHash=br->l_data;
@@ -1233,6 +1243,7 @@ void handlebr(bam1_t *br, Contig * pTheContig, Sam *pSamFile, int Tech, const St
 	if (TheAlignment.TypeSignatures[0].size()!=0 || TheAlignment.TypeSignatures[1].size()!=0)
 	{
 		// pthread_mutex_lock(&mut->m_AlignmentsSigs);
+		TheAlignment.HP=HP;
 		pAlignmentsSigs->push_back(TheAlignment);
 		// pthread_mutex_unlock(&mut->m_AlignmentsSigs);
 	}
@@ -1243,7 +1254,7 @@ void handlebr(bam1_t *br, Contig * pTheContig, Sam *pSamFile, int Tech, const St
 			getDRPSignature(br, SampleStats, TheContig, *pTypeSignatures);
 		}
 	}
-	searchForClipSignatures(br, TheContig, SamFile, Tech, *pTypeSignatures, CoverageWindowsPs, CoverageWindowsNs, Mut, Args);
+	searchForClipSignatures(br, HP, TheContig, SamFile, Tech, *pTypeSignatures, CoverageWindowsPs, CoverageWindowsNs, Mut, Args);
 }
 
 void * handlebrWrapper(void * args)

@@ -46,5 +46,26 @@ For the description of all parameters:
 kled --help
 ```
 
+## HapKled usage
+HapKled is a script that helps you handling kled with haplotype-tagged input.
+
+Before running HapKled you should first compile (see compiling the haplotype-aware kled) the haplotype-aware kled and put the path of it to the environment variable HapAwareKled.
+```
+export HapAwareKled=/path/to/hap-aware-kled
+```
+And you also need an installed Clair3 and Whatshap, and export the path of the Clair3 models to environment variable Clair3ModelPath.
+```
+export Clair3ModelPath=/path/to/bin/models
+```
+HapKled need a reference file (fasta) and at least one bam (sam/bam/cram) file that stores the mapped reads to call SVs, and output a VCF file to the standard output.
+```
+HapKled -R Refernce.fa Sample.bam > SVs.vcf
+```
+
+For the description of all parameters:
+```
+HapKled --help
+```
+
 ## Citation
 This work is published in *Briefings in Bioinformatics* (https://academic.oup.com/bib/article/25/2/bbae049/7611936), please visit the site for citations.

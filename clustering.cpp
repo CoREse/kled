@@ -220,7 +220,7 @@ struct ClusterStats
     ClusterStats():ABegin(0),AEnd(0),ALength(0),Templates(){}
 };
 
-bool isBrother(const Signature &A, const Signature &B, float PosRatio=0.1, int ForceBrother=5, float LengthRatio=0.1, int LengthMinEndurance=5, int ForceBrother2=5, float LengthRatio2=0.1, int NearRange=500, const ClusterStats * AS=nullptr, const ClusterStats* BS=nullptr)
+bool isBrother(const Signature &A, const Signature &B, const Arguments *Args, float PosRatio=0.1, int ForceBrother=5, float LengthRatio=0.1, int LengthMinEndurance=5, int ForceBrother2=5, float LengthRatio2=0.1, int NearRange=500, const ClusterStats * AS=nullptr, const ClusterStats* BS=nullptr)
 {
     // if (SupportedSV==3)//Inv
     // {
@@ -275,19 +275,23 @@ bool isBrother(const Signature &A, const Signature &B, float PosRatio=0.1, int F
     //     return false;
     // }
     if (A.TemplateName==B.TemplateName) return false;
-    if (abs(A.Begin-B.Begin)<=ForceBrother && abs(A.End-B.End)<=ForceBrother) return true;
+    double CompareRatio=1.0;
+    //DEL: 1.2,0.3
+    if (A.HP!=0 && A.HP==B.HP) CompareRatio=Args->HPSameCompareRatio[A.SupportedSV];
+    if (A.HP!=0 && B.HP!=0 && A.HP!=B.HP) CompareRatio=Args->HPDiffCompareRatio[A.SupportedSV];
+    if (abs(A.Begin-B.Begin)<=ForceBrother*CompareRatio && abs(A.End-B.End)<=ForceBrother*CompareRatio) return true;
     int MinLength=min(A.Length,B.Length);
-    int LengthEndurance=max(LengthMinEndurance,int(MinLength*LengthRatio));
+    int LengthEndurance=max(LengthMinEndurance,int(MinLength*LengthRatio))*CompareRatio;
     if (abs(A.Begin-B.Begin)<=MinLength*PosRatio && abs(A.End-B.End)<=MinLength*PosRatio && abs(A.Length-B.Length)<=LengthEndurance) return true;
     return false;
 }
 
-bool isBrother(const Signature* A, const Signature* B, float PosRatio=0.1, int ForceBrother=5, float LengthRatio=0.1, int LengthMinEndurance=5, int ForceBrother2=5, float LengthRatio2=0.1, int NearRange=500, const ClusterStats * AS=nullptr, const ClusterStats* BS=nullptr)
+bool isBrother(const Signature* A, const Signature* B, const Arguments *Args, float PosRatio=0.1, int ForceBrother=5, float LengthRatio=0.1, int LengthMinEndurance=5, int ForceBrother2=5, float LengthRatio2=0.1, int NearRange=500, const ClusterStats * AS=nullptr, const ClusterStats* BS=nullptr)
 {
-    return isBrother(*A, *B, PosRatio, ForceBrother, LengthRatio, LengthMinEndurance, ForceBrother2, LengthRatio2, NearRange, AS, BS);
+    return isBrother(*A, *B, Args, PosRatio, ForceBrother, LengthRatio, LengthMinEndurance, ForceBrother2, LengthRatio2, NearRange, AS, BS);
 }
 
-bool isBrother(const vector<Signature> &A, const vector<Signature> &B, float PosRatio=0.1, int ForceBrother=5, float LengthRatio=0.1, int LengthMinEndurance=5, int ForceBrother2=5, float LengthRatio2=0.1, int NearRange=500, const ClusterStats * AS=nullptr, const ClusterStats* BS=nullptr)
+bool isBrother(const vector<Signature> &A, const vector<Signature> &B, const Arguments *Args, float PosRatio=0.1, int ForceBrother=5, float LengthRatio=0.1, int LengthMinEndurance=5, int ForceBrother2=5, float LengthRatio2=0.1, int NearRange=500, const ClusterStats * AS=nullptr, const ClusterStats* BS=nullptr)
 {
     if (A[0].SupportedSV!=B[0].SupportedSV) return false;
     NearRange=200;
@@ -408,7 +412,7 @@ template<typename T> class Brotherhood
             for (int j=0;j<Other.Cluster.size();++j)
             {
                 const T & B=Other.Cluster[j];
-                if (isBrother(A,B,Ratio,ForceBrother,LengthRatio,LengthMinEndurance,ForceBrother2,LengthRatio2,NearRange,&(CStats[i]),&(Other.CStats[j])))
+                if (isBrother(A,B,&Args,Ratio,ForceBrother,LengthRatio,LengthMinEndurance,ForceBrother2,LengthRatio2,NearRange,&(CStats[i]),&(Other.CStats[j])))
                 {
                     return true;
                 }
@@ -661,7 +665,7 @@ void fitInClusters(vector<vector<Signature>> &Clusters, vector<Signature> & Othe
             SupportedBrother=0;
             for (const Signature & s: Cluster)
             {
-                if (isBrother(s, OtherSignatures[i],Ratio,ForceBrother,LengthRatio,LengthMinEndurance))
+                if (isBrother(s, OtherSignatures[i],&Args,Ratio,ForceBrother,LengthRatio,LengthMinEndurance))
                 {
                     SupportedBrother+=1;
                     if (SupportedBrother/ClusterSize>=0.8)
@@ -713,7 +717,7 @@ void mergeClusters(vector<vector<Signature>> &Clusters, Stats BamStats, Argument
         {
             if (j==i) continue;
             if (Clusters[j].size()==0) continue;
-            if(isBrother(Clusters[i],Clusters[j]))
+            if(isBrother(Clusters[i],Clusters[j],&Args))
             {
                 Clusters[i].insert(Clusters[i].end(),make_move_iterator(Clusters[j].begin()),make_move_iterator(Clusters[j].end()));
                 if(Clusters[j].size()!=0) Clusters[j].clear();
@@ -1175,6 +1179,21 @@ void clustering(int SVTypeI, string & ContigName, vector<Signature> & SortedSign
         // for (int i=0;i<Clusters.size();++i) Cores.push_back(ClusterCore());
     }
     else if (SortedSignatures.size()>0) brotherClustering2(SortedSignatures,Clusters,Cores,BamStats,Args);
+    // vector<vector<Signature>> HPSortedSignatures;
+    // for (int HP=0;HP<3;++HP) HPSortedSignatures.push_back(vector<Signature>());
+    // for (int i=0;i<SortedSignatures.size();++i)
+    // {
+    //     HPSortedSignatures[SortedSignatures[i].HP].push_back(SortedSignatures[i]);
+    // }
+    // for (int HP=0;HP<3;++HP)
+    // {
+    //     if (HPSortedSignatures[HP].size()>0 && Args.BrotherhoodNearRanges[SVTypeI]==-1)
+    //     {
+    //         brotherClustering(HPSortedSignatures[HP],Clusters,BamStats,Args);
+    //         // for (int i=0;i<Clusters.size();++i) Cores.push_back(ClusterCore());
+    //     }
+    //     else if (HPSortedSignatures[HP].size()>0) brotherClustering2(HPSortedSignatures[HP],Clusters,Cores,BamStats,Args);
+    // }
     // mergeClusters(Clusters,BamStats,Args);
     // simpleClustering(SortedSignatures,Clusters,BamStats,true);
     Args.Log.debug("%s of %s: number of signatures: %lu, number of clusters:%lu:",SVTypeNames[SVTypeI],ContigName.c_str(),SortedSignatures.size(), Clusters.size());

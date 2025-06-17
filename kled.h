@@ -2,7 +2,7 @@
 #ifndef KLED_KLED_H
 #define KLED_KLED_H
 
-// #define DEBUG
+#define DEBUG
 
 #define COMMA ,
 
@@ -22,7 +22,7 @@ const int NumberOfSVTypes=4;//Default is static so is fine.
 const char * const SVTypeNames[NumberOfSVTypes]={"DEL","INS","DUP","INV"};//Default is static so is fine.
 
 struct Arguments {
-	const char * Version="1.2.9";
+	const char * Version="1.2.9H11";
 	bool ShowVersion=false;
 	bool ShowHelp=false;
 	cre::Logger Log;
@@ -136,6 +136,19 @@ struct Arguments {
 	bool CalcPosSTD=false;
 	bool FID=true;
 	// unsigned long SigReduceBlockSize=1000;
+
+	double HPSameCompareRatio[NumberOfSVTypes]={0.8,0.8,0.4,1.0};
+	double HPDiffCompareRatio[NumberOfSVTypes]={1.4,1.5,1.4,1.3};
+
+	double HPRatio[NumberOfSVTypes]={0.8,0.7,0.2,0.5};
+	double HomoRatio[NumberOfSVTypes]={0.8,0.75,0.9,0.65};
+	double HomoMinus[NumberOfSVTypes]={0,0.05,0,0.7};
+	double HomoMinusRatio[NumberOfSVTypes]={0.2,0.25,0.6,0.2};
+	// double NonHomoCutoffRatio[NumberOfSVTypes]={1.0,1.0,1.0,1.0};
+	double NonHomoMinus[NumberOfSVTypes]={0.0,0.0,0.0,0.0};
+	double NonHomoMinusRatio[NumberOfSVTypes]={-0.05,0.3,0,0.4};
+	double LowHPPlus[NumberOfSVTypes]={0,0,0,0};
+	double LowHPPlusRatio[NumberOfSVTypes]={0.25,0.25,0.9,0};
 };
 
 #endif

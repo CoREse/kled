@@ -11,6 +11,7 @@ struct AlignmentSigs
 	std::vector<std::vector<Signature>> TypeSignatures;
 	int BeginMost, EndMost;
 	std::vector<int> TypeBeginMost, TypeEndMost;
+	int HP;
 	AlignmentSigs(unsigned long long AlignmentID, const char *TempName="");
 	int getBeginMost();
 	int getEndMost();

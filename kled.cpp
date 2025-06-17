@@ -161,7 +161,47 @@ struct CallingContigTypeArgs
 	Arguments * Args;
 };
 
-void callContigType(Contig *Contigs, vector<Stats> &AllStats, int i, int t,vector<vector<vector<Signature>>> &TypeSignatures, vector<SegmentSet> &ContigsAllPrimarySegments, vector<float*> &CoverageWindowsPs, vector<double> ContigTotalCoverage, vector<vector<vector<VCFRecord>>> &ContigOutputs, Arguments & Args)
+inline void resolveClusters(int t, Contig & TheContig, vector<vector<Signature>> &SignatureClusters, vector<ClusterCore> &SignatureClusterCores, vector<VCFRecord> &Records, SegmentSet &AllPrimarySegments, float *CoverageWindows, double TotalCoverage, Arguments & Args)
+{
+	vector<vector<Signature>> HPClusters;
+	for (int j=0;j<3;++j) HPClusters.push_back(vector<Signature>());
+	for (int j=0;j<SignatureClusters.size();++j)
+	{
+		if (SignatureClusters[j].size()==0) continue;
+		ClusterCore Core;
+		if (SignatureClusterCores.size()!=0) Core=SignatureClusterCores[j];
+		HPClustersDistinction(SignatureClusters[j],HPClusters,Args);
+		if (HPClusters[1].size()!=0){
+			for (int k=1;k!=3;++k)
+			{
+				VCFRecord R=VCFRecord(TheContig, HPClusters[1], Core, AllPrimarySegments, CoverageWindows, TotalCoverage, Args);
+				if (t==2)
+				{
+					Records.push_back(R);
+				}
+				else
+				{
+					if (R.Keep) Records.push_back(R);
+				}
+			}
+		}
+		else
+		{
+			VCFRecord R=VCFRecord(TheContig, SignatureClusters[j], Core, AllPrimarySegments, CoverageWindows, TotalCoverage, Args);
+			if (t==2)
+			{
+				Records.push_back(R);
+			}
+			else
+			{
+				if (R.Keep) Records.push_back(R);
+			}
+		}
+	}
+	sort(Records.data(),Records.data()+Records.size());
+}
+
+void callContigType(Contig *Contigs, vector<Stats> &AllStats, int i, int t, vector<vector<vector<Signature>>> &TypeSignatures, vector<SegmentSet> &ContigsAllPrimarySegments, vector<float*> &CoverageWindowsPs, vector<double> ContigTotalCoverage, vector<vector<vector<VCFRecord>>> &ContigOutputs, Arguments & Args)
 {
 	unsigned int CoverageWindowSize=Args.CoverageWindowSize;
 	unsigned int NumberOfCoverageWindows=Contigs[i].Size/CoverageWindowSize+1;
@@ -176,25 +216,26 @@ void callContigType(Contig *Contigs, vector<Stats> &AllStats, int i, int t,vecto
 	for (unsigned d=0;d<ContigTypeSignatures[t].size();++d) ContigTypeSignatures[t][d].setID(d);
 	clustering(t, Contigs[i].Name, ContigTypeSignatures[t],SignatureClusters,SignatureClusterCores,AllStats[i],Args);
 	
-	// vector<VCFRecord> Records;
-	// #pragma omp parallel for reduction(RecordVectorConc:Records)
-	for (int j=0;j<SignatureClusters.size();++j)
-	{
-		// ++Times[omp_get_thread_num()];
-		if (SignatureClusters[j].size()==0) continue;
-		ClusterCore Core;
-		if (SignatureClusterCores.size()!=0) Core=SignatureClusterCores[j];
-		VCFRecord R=VCFRecord(Contigs[i],SignatureClusters[j], Core, AllPrimarySegments,CoverageWindows, ContigTotalCoverage[i], Args);
-		if (t==2)
-		{
-			ContigOutputs[i][t].push_back(R);
-		}
-		else
-		{
-			if (R.Keep) ContigOutputs[i][t].push_back(R);
-		}
-	}
-	sort(ContigOutputs[i][t].data(),ContigOutputs[i][t].data()+ContigOutputs[i][t].size());
+	resolveClusters(t, Contigs[i], SignatureClusters, SignatureClusterCores, ContigOutputs[i][t], AllPrimarySegments, CoverageWindows, ContigTotalCoverage[i], Args);
+	// // vector<VCFRecord> Records;
+	// // #pragma omp parallel for reduction(RecordVectorConc:Records)
+	// for (int j=0;j<SignatureClusters.size();++j)
+	// {
+	// 	// ++Times[omp_get_thread_num()];
+	// 	if (SignatureClusters[j].size()==0) continue;
+	// 	ClusterCore Core;
+	// 	if (SignatureClusterCores.size()!=0) Core=SignatureClusterCores[j];
+	// 	VCFRecord R=VCFRecord(Contigs[i],SignatureClusters[j], Core, AllPrimarySegments,CoverageWindows, ContigTotalCoverage[i], Args);
+	// 	if (t==2)
+	// 	{
+	// 		ContigOutputs[i][t].push_back(R);
+	// 	}
+	// 	else
+	// 	{
+	// 		if (R.Keep) ContigOutputs[i][t].push_back(R);
+	// 	}
+	// }
+	// sort(ContigOutputs[i][t].data(),ContigOutputs[i][t].data()+ContigOutputs[i][t].size());
 }
 
 void* handleCallContigType(void* Args)
@@ -361,6 +402,46 @@ int main(int argc, const char* argv[])
     OH.addOpt(0, "InvMinPosSTD", 1, "STD", "Filter out clusters that have position stds > MinPosSTD, -1: don't filter.",'i',&(Args.MinPosSTD[3]));
     OH.addOpt(0, "PSTD", 0, "", "Always calculate Pos STD.",'b',&(Args.CalcPosSTD));
     OH.addOpt(0, "FID", 0, "", "Filter out insertions within duplication range that have large PSTD when number of duplication/number of insertion is large(>1/20). Implicates --PSTD.",'b',&(Args.FID));
+    OH.addOpt(0, "DelHPR", 1, "Ratio", "HPRatio for deletions",'F',&(Args.HPRatio[0]));
+    OH.addOpt(0, "DelHomoR", 1, "Ratio", "HomoRatio for deletions.",'F',&(Args.HomoRatio[0]));
+    OH.addOpt(0, "DelHomoM", 1, "Ratio", "Homo Minus for deletions.",'F',&(Args.HomoMinus[0]));
+    OH.addOpt(0, "DelHomoMR", 1, "Ratio", "Homo Minus Ratio for deletions.",'F',&(Args.HomoMinusRatio[0]));
+    OH.addOpt(0, "DelNonHomoM", 1, "Ratio", "Non Homo Minus for deletions.",'F',&(Args.NonHomoMinus[0]));
+    OH.addOpt(0, "DelNonHomoMR", 1, "Ratio", "Non Homo Minus Ratio for deletions.",'F',&(Args.NonHomoMinusRatio[0]));
+    OH.addOpt(0, "DelLowHPP", 1, "Ratio", "Low HP Plus for deletions.",'F',&(Args.LowHPPlus[0]));
+    OH.addOpt(0, "DelLowHPPR", 1, "Ratio", "Low HP Plus Ratio for deletions.",'F',&(Args.LowHPPlusRatio[0]));
+    OH.addOpt(0, "InsHPR", 1, "Ratio", "HPRatio for insertions",'F',&(Args.HPRatio[1]));
+    OH.addOpt(0, "InsHomoR", 1, "Ratio", "HomoRatio for insertions.",'F',&(Args.HomoRatio[1]));
+    OH.addOpt(0, "InsHomoM", 1, "Ratio", "Homo Minus for insertions.",'F',&(Args.HomoMinus[1]));
+    OH.addOpt(0, "InsHomoMR", 1, "Ratio", "Homo Minus Ratio for insertions.",'F',&(Args.HomoMinusRatio[1]));
+    OH.addOpt(0, "InsNonHomoM", 1, "Ratio", "Non Homo Minus for insertions.",'F',&(Args.NonHomoMinus[1]));
+    OH.addOpt(0, "InsNonHomoMR", 1, "Ratio", "Non Homo Minus Ratio for insertions.",'F',&(Args.NonHomoMinusRatio[1]));
+    OH.addOpt(0, "InsLowHPP", 1, "Ratio", "Low HP Plus for insertions.",'F',&(Args.LowHPPlus[1]));
+    OH.addOpt(0, "InsLowHPPR", 1, "Ratio", "Low HP Plus Ratio for insertions.",'F',&(Args.LowHPPlusRatio[1]));
+    OH.addOpt(0, "DupHPR", 1, "Ratio", "HPRatio for duplications",'F',&(Args.HPRatio[2]));
+    OH.addOpt(0, "DupHomoR", 1, "Ratio", "HomoRatio for duplications.",'F',&(Args.HomoRatio[2]));
+    OH.addOpt(0, "DupHomoM", 1, "Ratio", "Homo Minus for duplications.",'F',&(Args.HomoMinus[2]));
+    OH.addOpt(0, "DupHomoMR", 1, "Ratio", "Homo Minus Ratio for duplications.",'F',&(Args.HomoMinusRatio[2]));
+    OH.addOpt(0, "DupNonHomoM", 1, "Ratio", "Non Homo Minus for duplications.",'F',&(Args.NonHomoMinus[2]));
+    OH.addOpt(0, "DupNonHomoMR", 1, "Ratio", "Non Homo Minus Ratio for duplications.",'F',&(Args.NonHomoMinusRatio[2]));
+    OH.addOpt(0, "DupLowHPP", 1, "Ratio", "Low HP Plus for duplications.",'F',&(Args.LowHPPlus[2]));
+    OH.addOpt(0, "DupLowHPPR", 1, "Ratio", "Low HP Plus Ratio for duplications.",'F',&(Args.LowHPPlusRatio[2]));
+    OH.addOpt(0, "InvHPR", 1, "Ratio", "HPRatio for inversions",'F',&(Args.HPRatio[3]));
+    OH.addOpt(0, "InvHomoR", 1, "Ratio", "HomoRatio for inversions.",'F',&(Args.HomoRatio[3]));
+    OH.addOpt(0, "InvHomoM", 1, "Ratio", "Homo Minus for inversions.",'F',&(Args.HomoMinus[3]));
+    OH.addOpt(0, "InvHomoMR", 1, "Ratio", "Homo Minus Ratio for inversions.",'F',&(Args.HomoMinusRatio[3]));
+    OH.addOpt(0, "InvNonHomoM", 1, "Ratio", "Non Homo Minus for inversions.",'F',&(Args.NonHomoMinus[3]));
+    OH.addOpt(0, "InvNonHomoMR", 1, "Ratio", "Non Homo Minus Ratio for inversions.",'F',&(Args.NonHomoMinusRatio[3]));
+    OH.addOpt(0, "InvLowHPP", 1, "Ratio", "Low HP Plus for inversions.",'F',&(Args.LowHPPlus[3]));
+    OH.addOpt(0, "InvLowHPPR", 1, "Ratio", "Low HP Plus Ratio for inversions.",'F',&(Args.LowHPPlusRatio[3]));
+    OH.addOpt(0, "DelHPSCR", 1, "Ratio", "HP same compare ratio for deletions",'F',&(Args.HPSameCompareRatio[0]));
+    OH.addOpt(0, "DelHPDCR", 1, "Ratio", "HP diff compare ratio for deletions",'F',&(Args.HPDiffCompareRatio[0]));
+    OH.addOpt(0, "InsHPSCR", 1, "Ratio", "HP same compare ratio for insertions",'F',&(Args.HPSameCompareRatio[1]));
+    OH.addOpt(0, "InsHPDCR", 1, "Ratio", "HP diff compare ratio for insertions",'F',&(Args.HPDiffCompareRatio[1]));
+    OH.addOpt(0, "DupHPSCR", 1, "Ratio", "HP same compare ratio for duplications",'F',&(Args.HPSameCompareRatio[2]));
+    OH.addOpt(0, "DupHPDCR", 1, "Ratio", "HP diff compare ratio for duplications",'F',&(Args.HPDiffCompareRatio[2]));
+    OH.addOpt(0, "InvHPSCR", 1, "Ratio", "HP same compare ratio for inversions",'F',&(Args.HPSameCompareRatio[3]));
+    OH.addOpt(0, "InvHPDCR", 1, "Ratio", "HP diff compare ratio for inversions",'F',&(Args.HPDiffCompareRatio[3]));
 	#ifdef DEBUG
     OH.addOpt(0, "NOH", 0, "", "No header, for test",'b',&(NoHeader));
 	string WriteSigDataFileName="";
@@ -592,7 +673,7 @@ int main(int argc, const char* argv[])
 		}
 		// ContigsAllPrimarySegments[i]=SegmentSet();
 	}
-	else
+	else //Deprecated.
 	{
 		for (int i=0;i<NSeq;++i)
 		{
@@ -737,15 +818,24 @@ int main(int argc, const char* argv[])
 			Log.debug("%s: %d\n, cigardel: %d, cigarins: %d, cigardup: %d, drpdel: %d, drpdup: %d, clipdel: %d, clipins: %d, clipdup: %d, clipinv: %d, NGS: %d, SMRT: %d. Contig Size:%ld, Average Coverage: %lf, Total Average Coverage: %lf",Contigs[i].Name.c_str(),totalsig,cigardel, cigarins, cigardup, drpdel, drpdup, clipdel, clipins, clipdup, clipinv, NGS, SMRT, Contigs[i].Size, WholeCoverage, TotalCoverage);
 
 			vector<VCFRecord> Records;
-			for (int j=0;j<SignatureClusters.size();++j)
-			{
-				// ++Times[omp_get_thread_num()];
-				if (SignatureClusters[j].size()==0) continue;
-				ClusterCore Core;
-				if (SignatureClusterCores.size()!=0) Core=SignatureClusterCores[j];
-				Records.push_back(VCFRecord(Contigs[i],SignatureClusters[j], Core, AllPrimarySegments,CoverageWindows, TotalCoverage, Args, CoverageWindowsSums, CheckPoints, CheckPointInterval));
-			}
-			sort(Records.data(),Records.data()+Records.size());
+			resolveClusters(2, Contigs[i], SignatureClusters, SignatureClusterCores, Records, AllPrimarySegments, CoverageWindows, TotalCoverage, Args);
+			// vector<vector<Signature>> HPClusters;
+			// for (int j=0;j<3;++j) HPClusters.push_back(vector<Signature>());
+			// for (int j=0;j<SignatureClusters.size();++j)
+			// {
+			// 	// ++Times[omp_get_thread_num()];
+			// 	if (SignatureClusters[j].size()==0) continue;
+			// 	ClusterCore Core;
+			// 	if (SignatureClusterCores.size()!=0) Core=SignatureClusterCores[j];
+			// 	//TODO: add length diff / lstd devide between haps
+			// 	HPClustersDistinction(SignatureClusters[j],HPClusters,Args);
+			// 	if (HPClusters[1].size()!=0){
+			// 		Records.push_back(VCFRecord(Contigs[i],HPClusters[1], Core, AllPrimarySegments,CoverageWindows, TotalCoverage, Args, CoverageWindowsSums, CheckPoints, CheckPointInterval));
+			// 		Records.push_back(VCFRecord(Contigs[i],HPClusters[2], Core, AllPrimarySegments,CoverageWindows, TotalCoverage, Args, CoverageWindowsSums, CheckPoints, CheckPointInterval));
+			// 	}
+			// 	else Records.push_back(VCFRecord(Contigs[i],SignatureClusters[j], Core, AllPrimarySegments,CoverageWindows, TotalCoverage, Args, CoverageWindowsSums, CheckPoints, CheckPointInterval));
+			// }
+			// sort(Records.data(),Records.data()+Records.size());
 
 			for (auto r: Records)
 			{
@@ -784,11 +874,48 @@ int main(int argc, const char* argv[])
 			if (ContigOutputs[i][t].size()!=0) ContigOutputs[i][0].insert(ContigOutputs[i][0].end(),make_move_iterator(ContigOutputs[i][t].begin()),make_move_iterator(ContigOutputs[i][t].end()));
 		}
 		sort(ContigOutputs[i][0].begin(),ContigOutputs[i][0].end());
+	}
+	unsigned SmallHapCount=0, BigHapCount=0, LastSmall=0, LastBig=0;
+	// do
+	// {
+	LastSmall=SmallHapCount;
+	LastBig=BigHapCount;
+	SmallHapCount=0;BigHapCount=0;
+	for (int i=0;i<NSeq;++i)
+	{
+		for (int j=0;j<ContigOutputs[i][0].size();++j)
+		{
+			VCFRecord &r=ContigOutputs[i][0][j];
+			if (!r.Keep) continue;
+			if (r.Sample["GT"]==string("1/1")) continue;
+			// if (min(r.HPCounts[1],r.HPCounts[2])>10) continue;
+			// if ((r.HPCounts[1]+r.HPCounts[2])>10 and ((double)min(r.HPCounts[1],r.HPCounts[2]))/(r.HPCounts[1]+r.HPCounts[2])>0.2) continue;
+			// if (r.getSVTypeI()!=0 and r.getSVTypeI()!=1) continue;
+			SmallHapCount+=min(r.HPCounts[1],r.HPCounts[2]);
+			BigHapCount+=max(r.HPCounts[1],r.HPCounts[2]);
+		}
+	}
+	for (int i=0;i<NSeq;++i)
+	{
+		for (int j=0;j<ContigOutputs[i][0].size();++j)
+		{
+			VCFRecord &r=ContigOutputs[i][0][j];
+			if (!r.Keep) continue;
+			if (r.Sample["GT"]==string("1/1")) continue;
+			// if (min(r.HPCounts[1],r.HPCounts[2])>10) continue;
+			r.hapGT(SmallHapCount,BigHapCount);
+		}
+	}
+	Log.debug("S,B,R:%u,%u,%lf",SmallHapCount,BigHapCount,((double)SmallHapCount)/(SmallHapCount+BigHapCount));
+	// } while (LastBig!=BigHapCount || LastSmall!=SmallHapCount);
+	for (int i=0;i<NSeq;++i)
+	{
 		for (int j=0;j<ContigOutputs[i][0].size();++j)
 		{
 			VCFRecord &r=ContigOutputs[i][0][j];
 			if (!r.Keep) continue;
 			// r.genotype(Contigs[i],AllPrimarySegments,CoverageWindows,CoverageWindowsSums,CheckPoints,CheckPointInterval,Args);
+			r.hapGT(SmallHapCount, BigHapCount);
 			r.resolveRef(Contigs[i],Ref,SVCounts[r.getSVTypeI()], ContigWholeCoverage[i],Args);
 			++SVCounts[r.getSVTypeI()];
 			printf("\n%s",string(r).c_str());

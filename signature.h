@@ -52,6 +52,7 @@ class Signature : public Segment
     double Quality;//Signature quality, the higher the better
     unsigned ID;
     bool Artificial;//Merged merging template
+    int HP;//HP tag
     DEBUG_CODE(std::string MergeString;)
     Signature();
     Signature(int Type, int Tech, int SupportedSV, int Begin, int End, std::string TemplateName, double Quality, const char * InsBases="");
@@ -83,6 +84,7 @@ class Signature : public Segment
         ar & Quality;
         ar & ID;
         ar & Artificial;
+        ar & HP;
         ar & MergeString;
     }
     void setMergeString(std::string MS)

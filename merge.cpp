@@ -235,7 +235,7 @@ void forAllCandidateLinks(int Type, int Index, vector<AlignmentSigs> * pAlignmen
 	forAllCandidateLinks(Type, Index, pAlignmentsSigs, SigIndexes, RelevantBeginIndexI, RelevantEndIndexI, BestSegs, BestBestScore, Edges, Args, MaxEdges, CurrentIndex+1, CurrentLink);
 }
 
-void getSigsFromSegs(int Type, vector<Segment> & BestSegs, vector<Signature> &Signatures, int Tech, const char * qname, double Quality)
+void getSigsFromSegs(int Type, int HP, vector<Segment> & BestSegs, vector<Signature> &Signatures, int Tech, const char * qname, double Quality)
 {
 	int End;
 	for (int i=0;i<BestSegs.size();++i)
@@ -243,6 +243,7 @@ void getSigsFromSegs(int Type, vector<Segment> & BestSegs, vector<Signature> &Si
 		End=BestSegs[i].End;
 		if (BestSegs[i].InsBases.size()!=0) End=BestSegs[i].Begin+BestSegs[i].InsBases.size();
 		Signature Temp(0,Tech,Type,BestSegs[i].Begin,End,qname,Quality, BestSegs[i].InsBases.c_str());
+		Temp.HP=HP;
 		Signatures.push_back(Temp);
 	}
 }
@@ -280,7 +281,7 @@ void omniBMergeType(int Type, vector<Signature> &Signatures, int Index, vector<A
 	vector<Segment> BestSegs;
 	int BestBestScore=INT_MIN;
 	forAllCandidateLinks(Type, Index, pAlignmentsSigs, SigIndexes, RelevantBeginIndexI, RelevantEndIndexI,BestSegs,BestBestScore, Edges, *pArgs, pArgs->OmniBMaxEdges);
-	getSigsFromSegs(Type,BestSegs,Signatures,(*pAlignmentsSigs)[Index].TypeSignatures[Type][0].Tech,(*pAlignmentsSigs)[Index].TypeSignatures[Type][0].TemplateName.c_str(),(*pAlignmentsSigs)[Index].TypeSignatures[Type][0].Quality);
+	getSigsFromSegs(Type,pAlignmentsSigs->at(Index).HP,BestSegs,Signatures,(*pAlignmentsSigs)[Index].TypeSignatures[Type][0].Tech,(*pAlignmentsSigs)[Index].TypeSignatures[Type][0].TemplateName.c_str(),(*pAlignmentsSigs)[Index].TypeSignatures[Type][0].Quality);
 }
 
 void omniBMerge(vector<vector<Signature>> * pTypeSignatures, int Index, vector<AlignmentSigs> * pAlignmentsSigs, const int **TypeSigIndexes, const int **TypeMaxEnds, Arguments *pArgs)
@@ -300,7 +301,7 @@ void *omniBHandler(void * Args)
 	return NULL;
 }
 
-AlignmentSigs::AlignmentSigs(unsigned long long ID, const char *TempName):AlignmentID(ID),TemplateName(TempName),TypeSignatures({std::vector<Signature>(),std::vector<Signature>()}),BeginMost(-1),EndMost(-1),TypeBeginMost({-1,-1}),TypeEndMost({-1,-1})
+AlignmentSigs::AlignmentSigs(unsigned long long ID, const char *TempName):AlignmentID(ID),TemplateName(TempName),TypeSignatures({std::vector<Signature>(),std::vector<Signature>()}),BeginMost(-1),EndMost(-1),TypeBeginMost({-1,-1}),TypeEndMost({-1,-1}),HP(0)
 {
 }
 
