@@ -2,33 +2,37 @@
 ## Introduction
 Kled is designed to call SVs nicely and quickly using long-read sequencing data. It takes mapped reads file (bam) as input and reports SVs to the stdout in the VCF file format. Kled can yield precise and comprehensive SV detection results within minutes and can run on any modern computer without needing of any field knowledge of the user to perform the SV detection.
 
-## Project structure
-This project contains the source of the kled, which resides in the root path of the project, and the scripts used in the experiments, which reside in the experiments folder.
-
 ## Compiling
-Dependencies: openmp and dependencies of htslib (-lz -lm -lbz2 -llzma -lcurl -lpthread -lcrypto -ldeflate)
+Kled uses cmake build tools to build the project.
 
-Here are instructions to get some dependencies from source if systemwide installation is not available:
-- zlib: download from https://github.com/madler/zlib/releases, unzip and cd and ./configure && make && make install prefix=/path/to/your/local
-- libbz2: download from https://sourceforge.net/projects/bzip2/, unzip and cd and make && make install PREFIX=/path/to/your/local
-And export CPATH to make compiler know where the lib is: export CPATH=/path/to/your/local/include:$CPATH
+Make sure you have the following dependencies and cmake tools (>=3.15), g++ (gxx) (>=15.1):
+- zlib >=1.3
+- bzip2 >=1.0
+- liblzma-devel >=5.8
+- libcurl >=8.0
+- openssl >=3.5
+- libdeflate >=1.24
+- libboost-devel >=1.84
+- gmp >=6.3
 
-You also need a compiler that supports C++ 17 standard.
-
-To get the kled binary:
+To build the project, run:
 ```
-#to get htslib
-git submodule update --init --recursive
-
-#make kled
-make
+git clone https://github.com/CoREse/kled
+cd kled
+mkdir build
+cd build
+cmake -DCMAKE_INSTALL_PREFIX=/your/path ..
+cmake --build . -j 16
 ```
-
-If you want to install kled:
+And you will have the kled built and kled and HapKled installed,
+### Conda
+Kled is now on bioconda! To get kled, simply:
 ```
-make install
-#or if you want to install to a place other than /usr/local:
-PREFIX=PATH_YOU_SELECT make install
+conda install kled -c bioconda
+```
+And that's all! But before that, be sure you will install kled in the right environment, to create a dedicated environment for kled:
+```
+conda create -n kled kled -c bioconda
 ```
 ## Usage
 Kled need a reference file (fasta) and at least one bam (sam/bam/cram) file that stores the mapped reads to call SVs, and output a VCF file to the standard output.
@@ -68,4 +72,6 @@ HapKled --help
 ```
 
 ## Citation
-This work is published in *Briefings in Bioinformatics* (https://academic.oup.com/bib/article/25/2/bbae049/7611936), please visit the site for citations.
+This work is published on [*Briefings in Bioinformatics*](https://academic.oup.com/bib/article/25/2/bbae049/7611936), doi:10.1093/bib/bbae049, please visit the site for citations.
+
+The HapKled is published on [*Frontiers in Genetics*](https://www.frontiersin.org/journals/genetics/articles/10.3389/fgene.2024.1435087/full), doi:10.3389/fgene.2024.1435087, please visit the site for citations.

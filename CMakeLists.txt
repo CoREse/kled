@@ -130,3 +130,6 @@ target_include_directories(kled PRIVATE
 )
 
 target_compile_options(kled PRIVATE -O3 -fPIE)
+
+install(TARGETS kled DESTINATION bin)
+install(PROGRAMS HapKled DESTINATION bin)
