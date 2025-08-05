@@ -23,6 +23,7 @@ mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=/your/path ..
 cmake --build . -j 16
+cmake --install .
 ```
 And you will have the kled built and kled and HapKled installed,
 ### Conda
