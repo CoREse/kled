@@ -42,6 +42,19 @@ void showVersion(Arguments & Args)
 	printf("Kled version %s.\n",Args.Version);
 }
 
+void showShortHelp()
+{
+	printf("Usage:\n\tkled [Options] Bam1 [Bam2] [Bam3] ...\nExample:\n\tkled -R ref.fa -t 16 Sample.bam > Result.vcf\n\
+Options:\n\
+\t-R ReferenceFileName\n\
+\t--CCS,--CLR SequencePlatform (Assumes the platform is ONT if not given)\n\
+\t-t ThreadNumber\n\
+\t-S SampleName\n\
+\t-C ContigToCallOn\n\
+\t...\n\
+kled -h for more details.\n");
+}
+
 vector<string> split(string line, string delimiter=" ")
 {
     vector<string> items;
@@ -450,7 +463,7 @@ int main(int argc, const char* argv[])
     OH.addOpt(0, "RS", 1, "Data file name", "File name to read signature data",'S',&(ReadSigDataFileName));
 	#endif
 	Args.OH=&OH;
-    OH.getOpts(argc,argv);
+    int ParseState=OH.getOpts(argc,argv);
 
 	if (Args.ShowHelp)
 	{
@@ -466,9 +479,9 @@ int main(int argc, const char* argv[])
 
 	Args.BamFileNames=OH.Args;
 
-	if (Args.ReferenceFileName==0 || Args.BamFileNames.size()==0)
+	if ((!Args.ShowHelp) && (!ParseState || Args.ReferenceFileName==0 || Args.BamFileNames.size()==0))
 	{
-		OH.showhelp();
+		showShortHelp();
 		exit(1);
 	}
 

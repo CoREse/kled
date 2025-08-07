@@ -115,7 +115,6 @@ int OptHelper::getOpts(int argc, const char ** argv)
     {
         if (shortopt==':' || shortopt=='?')
         {
-            showhelp();
             free(Shorts);
             free(Longs);
             return 0;
