@@ -16,6 +16,7 @@
 #include <sstream>
 #include <iostream>
 #include "htslib/htslib/thread_pool.h"
+#include <set>
 #ifdef DEBUG
 #include <fstream>
 
@@ -310,13 +311,8 @@ Arguments Args;
 int main(int argc, const char* argv[])
 {
 	string RunString=Args.Version;
-	for (int i=1;i<argc;++i) RunString+=string(" ")+argv[i];
 	Args.CommandLine=argv[0];
 	for (int i=1;i<argc;++i) Args.CommandLine+=string(" ")+argv[i];
-	size_t Hash=hash<string>()(RunString);
-	stringstream ss;
-	ss<<std::hex<<Hash;
-	ss>>Args.RunHash;
 	bool NoHeader=false;
 	OptHelper OH=OptHelper("kled [Options] Bam1 [Bam2] [Bam3] ...");
     OH.addOpt('R', "Ref", 1, "FileName", "Indicate Reference Fasta File(required)",'s',&(Args.ReferenceFileName));
@@ -461,6 +457,21 @@ int main(int argc, const char* argv[])
 	}
 
 	if (Args.FID) Args.CalcPosSTD=true;
+
+	vector<string> ParaPairs=OH.OptPairs;
+	sort(ParaPairs.begin(), ParaPairs.end());
+	for (int i=0;i<ParaPairs.size();++i)
+	{
+		RunString+=string(" ")+ParaPairs[i];
+	}
+	for (int i=0;i<Args.BamFileNames.size();++i)
+	{
+		RunString+=string(" ")+Args.BamFileNames[i];
+	}
+	size_t Hash=hash<string>()(RunString);
+	stringstream ss;
+	ss<<std::hex<<Hash;
+	ss>>Args.RunHash;
 
 	omp_set_num_threads(Args.ThreadN);
 

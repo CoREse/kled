@@ -39,6 +39,12 @@ OptEntry::OptEntry(char short_opt, const char * long_opt, int need_arg, const ch
         }
     }
 
+string OptEntry::getOptName() const
+{
+    if (ShortOpt!=0) return string("-")+ShortOpt;
+    return string("--")+LongOpt;
+}
+
 void OptHelper::addOpt(char short_opt, const char * long_opt, int need_arg, const char * arg_name, const char * help_description, char data_type, void * data, bool multi, void*(*funAfter)(void *), void * funArgs)//data should be allocated pointer with correct data type
 {
     Opts.push_back(OptEntry(short_opt, long_opt, need_arg, arg_name, help_description, data_type, data, multi, funAfter, funArgs));
@@ -145,6 +151,7 @@ int OptHelper::getOpts(int argc, const char ** argv)
                 fprintf(stderr, "[WARN] Parsing %s with no arg!\n",OptName);
                 free(OptName);
             }
+            OptPairs.push_back(Opts[Index].getOptName());
         }
         else
         {
@@ -191,6 +198,7 @@ int OptHelper::getOpts(int argc, const char ** argv)
                     break;
                 }
             }
+            OptPairs.push_back(Opts[Index].getOptName()+" "+string(optarg));
         }
         if (Opts[Index].funAfter!=NULL) Opts[Index].funAfter(Opts[Index].funArgs);
     }

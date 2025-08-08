@@ -929,7 +929,7 @@ inline string getDate()
 {
     time_t t = time(0);   // get time now
     tm* now = localtime(&t);
-    return to_string(now->tm_year + 1900)+(now->tm_mon<9?"0":"")+to_string((now->tm_mon + 1))+to_string(now->tm_mday);
+    return to_string(now->tm_year + 1900)+(now->tm_mon<9?"0":"")+to_string((now->tm_mon + 1))+(now->tm_mday<10?"0":"")+to_string(now->tm_mday);
 }
 
 VCFHeader::VCFHeader(const char * AReference)

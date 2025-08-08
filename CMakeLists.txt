@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 project(kled LANGUAGES CXX)
+enable_testing()
+add_subdirectory(tests) 
 
 if(DEFINED ENV{CONDA_PREFIX})
     list(APPEND CMAKE_PREFIX_PATH "$ENV{CONDA_PREFIX}")

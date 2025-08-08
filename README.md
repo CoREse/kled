@@ -72,6 +72,21 @@ For the description of all parameters:
 HapKled --help
 ```
 
+## Change log
+- 1.2.10:
+    - Code clean.
+    - Commented out the DEBUG macro.
+    - Change the VCF date format.
+    - Change the way to calculate the run hash.
+    - Add test for cmake.
+
+## Version rule
+Version format: kled vX.Y.Z[.pN], or kled version X.Y.Z[.pN]. Where X is the major version number, Y is the algorithm version, Z is the minor version, and N is the patch number.
+
+X is updated when there is a major improvement of kled. Y is updated when there are updates that will influence the SV calling result, for example, the F1 benchmark score. Z is updated when the output VCF is changed given the same inputs (besides the running date). And pN is added when there are source code changes that do not influence the output of the build, i.e., versions with the same X.Y.Z shall have identical outputs (except for the run date) given the same inputs and parameters. X, Y, Z, and N all start with 1, and are increased by 1 on each update.
+
+This rule is applied since kled version 1.2.10.
+
 ## Citation
 This work is published on [*Briefings in Bioinformatics*](https://academic.oup.com/bib/article/25/2/bbae049/7611936), doi:10.1093/bib/bbae049, please visit the site for citations.
 

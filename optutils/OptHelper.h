@@ -20,6 +20,7 @@ struct OptEntry
     void * (*funAfter) (void *);
     void * funArgs;
     OptEntry(char short_opt, const char * long_opt, int need_arg, const char * arg_name, const char * help_description, char data_type, void * data, bool multi=false, void *(*funAfter)(void *)=NULL, void* funArgs=NULL);//data should be allocated pointer with correct data type
+    std::string getOptName() const;
 };
 
 class OptHelper
@@ -29,6 +30,7 @@ class OptHelper
     void initData();
     public:
     std::vector<const char *> Args;
+    std::vector<std::string> OptPairs;
     OptHelper(const char * usage=NULL);
     /*
     data and defaultdata should be allocated pointer with correct data type, recommend to initialize data outside then pass it to both data and default data
