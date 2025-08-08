@@ -18,16 +18,6 @@ struct AlignmentSigs
 	operator std::string();
 };
 
-// struct MergingMutex
-// {
-// 	pthread_mutex_t m_AddingSigs[2];
-// 	MergingMutex()
-// 	{
-// 		pthread_mutex_init(&m_AddingSigs[0],NULL);
-// 		pthread_mutex_init(&m_AddingSigs[1],NULL);
-// 	}
-// };
-
 struct OmniBMergeArgs
 {
 	std::unordered_map<pthread_t,std::vector<std::vector<Signature>>> * pTypeSignatures;
@@ -35,7 +25,6 @@ struct OmniBMergeArgs
 	std::vector<AlignmentSigs> * pAlignmentsSigs;
 	const int ** TypeSigIndexes;
 	const int ** TypeMaxEnds;
-	// MergingMutex *mut;
     Arguments *pArgs;
 };
 
@@ -48,7 +37,6 @@ struct SimpleMergeArgs
 	std::unordered_map<pthread_t,std::vector<std::vector<Signature>>> * pTypeSignatures;
     int Index;
     std::vector<AlignmentSigs> * pAlignmentsSigs;
-    // MergingMutex *mut;
     Arguments *pArgs;
 	bool Regional;
 };

@@ -2,7 +2,7 @@
 #ifndef KLED_KLED_H
 #define KLED_KLED_H
 
-#define DEBUG
+// #define DEBUG
 
 #define COMMA ,
 
@@ -135,7 +135,6 @@ struct Arguments {
 	int MinPosSTD[NumberOfSVTypes]={-1,-1,-1,-1};//Filter out clusters that have position stds > MinPosSTD, -1: don't filter.
 	bool CalcPosSTD=false;
 	bool FID=true;
-	// unsigned long SigReduceBlockSize=1000;
 
 	double HPSameCompareRatio[NumberOfSVTypes]={0.8,0.8,0.4,1.0};
 	double HPDiffCompareRatio[NumberOfSVTypes]={1.4,1.5,1.4,1.3};
@@ -144,7 +143,6 @@ struct Arguments {
 	double HomoRatio[NumberOfSVTypes]={0.8,0.75,0.9,0.65};
 	double HomoMinus[NumberOfSVTypes]={0,0.05,0,0.7};
 	double HomoMinusRatio[NumberOfSVTypes]={0.2,0.25,0.6,0.2};
-	// double NonHomoCutoffRatio[NumberOfSVTypes]={1.0,1.0,1.0,1.0};
 	double NonHomoMinus[NumberOfSVTypes]={0.0,0.0,0.0,0.0};
 	double NonHomoMinusRatio[NumberOfSVTypes]={-0.05,0.3,0,0.4};
 	double LowHPPlus[NumberOfSVTypes]={0,0,0,0};

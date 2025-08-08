@@ -40,10 +40,6 @@ void Signature::setID(unsigned d)
 
 bool Signature::operator<(const Signature &Other) const
 {
-    // char AL[100], BL[100];
-    // sprintf(AL,"%d",this->Length);
-    // sprintf(BL,"%d",Other.Length);
-    // int cmp=strcmp(AL,BL);
     if (this->Begin<Other.Begin) return true;
     else if (this->Begin>Other.Begin) return false;
     else if (this->Length<Other.Length) return true;
@@ -52,8 +48,6 @@ bool Signature::operator<(const Signature &Other) const
     else if (this->Quality<Other.Quality) return false;
     else if (this->InsBases<Other.InsBases) return true;
     else if (this->InsBases>Other.InsBases) return false;
-    // else if (cmp<0) return true;
-    // else if (cmp>0) return false;
     else return this->TemplateName<Other.TemplateName;
 }
 

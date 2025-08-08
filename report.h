@@ -61,9 +61,6 @@ class VCFRecord
     std::string InsConsensus;
     int SVTypeI;
     DEBUG_CODE(std::string MergeStrings;)
-    //temp
-    // double CS;
-    // std::vector<Signature> Cluster;
     public:
     std::string CHROM;
     int Pos;//0-based reference Pos of the variant, for insertion is the pos after the insertion, otherwise is the 1st base of the variant

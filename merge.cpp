@@ -14,7 +14,6 @@ vector<int> getAllProperEdges(vector<Signature> &Signatures, int MaxDis=500)// a
 	vector<int> Edges;
 	for (int i=0;i<Signatures.size()-1;++i)
 	{
-		// Edges.push_back(i);
 		if (Signatures[i+1].Begin-Signatures[i].End<MaxDis)
 		{
 			Edges.push_back(i);
@@ -100,46 +99,21 @@ inline vector<Segment> generateSegsFromLink(vector<Signature> &Sigs, vector<int>
 int scoreB(vector<Segment>& Segs1, vector<Segment>& Segs2, int B)//Segs1 and Segs2 shall be sorted
 {
 	int ScoreB=0;
-    //already sorted.
-	// sort(Segs1.begin(), Segs1.end(), [](const Segment& a, const Segment& b) {
-    //     return a.Begin < b.Begin;
-    // });
-    // sort(Segs2.begin(), Segs2.end(), [](const Segment& a, const Segment& b) {
-    //     return a.Begin < b.Begin;
-    // });
-    // for(int j = 0; j < Segs2.size(); ++j) {
-    //     int i = 0;
-    //     while(i < Segs1.size() && Segs1[i].Begin <= Segs2[j].Begin + 10*B) {
-    //         int dist = abs(Segs1[i].Begin - Segs2[j].Begin) + abs(Segs1[i].End - Segs2[j].End);
-	// 		int difflen=abs((Segs1[i].End-Segs1[1].Begin)-(Segs2[j].End-Segs2[j].Begin));
-    //         if(dist <= 10*B && difflen<=B) {
-	// 			ScoreB+= B - dist;
-	// 			// ScoreB+=B-difflen;
-    //             ++i;
-    //         } else {
-    //             ++i;
-    //         }
-    //     }
-    // }
 	for (int i=0;i<Segs1.size();++i)
 	{
 		int j=0;
-		// int Best=0;
 		while (j<Segs2.size() && Segs2[j].Begin <=Segs1[i].Begin+ B)
 		{
             int dist = abs(Segs1[i].Begin - Segs2[j].Begin) + abs(Segs1[i].End - Segs2[j].End);
             if (dist >B) {++j;continue;}
 			int difflen=abs((Segs1[i].End-Segs1[i].Begin)-(Segs2[j].End-Segs2[j].Begin));
-			// difflen=max(difflen,abs(int(Segs1[i].InsBases.length())-int(Segs2[j].InsBases.length())));
             if(difflen<=B) {
-				// Best=max(Best, B - dist);
 				ScoreB+=B-difflen;
                 ++j;
             } else {
                 ++j;
             }
 		}
-		// ScoreB+=Best;
 	}
     return ScoreB;
 }
@@ -148,12 +122,10 @@ int scoreB(vector<Segment>& Segs1, vector<Segment>& Segs2, int B)//Segs1 and Seg
 int getBestScore(vector<Segment> &Segs, vector<Signature> &Sigs, int B=100)
 {
 	if (Sigs.size()==0) return 0;
-	// if (Sigs.size()>1) return 0;
     bool UseEdge=false;
     if (UseEdge)
     {
         int BestScores[Sigs.size()+1][Sigs.size()+1];//DP scores, [A][B], for Score for Sigs[A,B)
-        // fprintf(stderr,"DP space: %lfMB.\n" ,(double)((Sigs.size()+1)*(Sigs.size()+1))*4.0/1024.0/1024.0);
         set<int> AllEdges;
         vector<int> Edges;
         Edges=getAllProperEdges(Sigs);
@@ -180,7 +152,6 @@ int getBestScore(vector<Segment> &Segs, vector<Signature> &Sigs, int B=100)
         return BestScores[0][Edges.size()];
     }
 	int BestScores[Sigs.size()+1][Sigs.size()+1];//DP scores, [A][B], for Score for Sigs[A,B)
-	// fprintf(stderr,"DP space: %lfMB.\n" ,(double)((Sigs.size()+1)*(Sigs.size()+1))*4.0/1024.0/1024.0);
     vector<Segment> Segs2;
 	for (int len=1; len<=Sigs.size(); ++len)
 	{
