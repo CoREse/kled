@@ -4,7 +4,7 @@ enable_testing()
 add_subdirectory(tests) 
 
 if(DEFINED ENV{CONDA_PREFIX})
-    list(APPEND CMAKE_PREFIX_PATH "$ENV{CONDA_PREFIX}")
+    list(PREPEND CMAKE_PREFIX_PATH "$ENV{CONDA_PREFIX}")
 endif()
 
 set(HTSLIB_BINARY_DIR ${CMAKE_BINARY_DIR}/htslib-build)

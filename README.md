@@ -15,10 +15,13 @@ Make sure you have the following dependencies and cmake tools (>=3.15), g++ (gxx
 - libboost-devel >=1.84
 - gmp >=6.3
 
+You can use pixi to configure the dependencies, just install pixi into your environment and in the kled folder, enter pixi shell.
+
 To build the project, run:
 ```
 git clone https://github.com/CoREse/kled
 cd kled
+[pixi shell]
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=/your/path ..
