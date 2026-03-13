@@ -1042,7 +1042,7 @@ vector<Stats> getAllStats(const char * ReferenceFileName, const vector<const cha
 
 string getSampleName(bam_hdr_t* Header)
 {
-	char SampleName[1024];
+	char SampleName[1024]="";
 	kstring_t ks=KS_INITIALIZE;
 	ks_resize(&ks,1000);
 	sam_hdr_find_line_pos(Header,"RG",0,&ks);
